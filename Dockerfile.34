@@ -1,0 +1,56 @@
+from registry.access.redhat.com/rhel7
+
+# use local repository instead of RHN.
+#COPY conf/local.repo /etc/yum.repos.d/local.repo
+COPY conf/tmux.conf /root/.tmux.conf
+
+# the following steps taken from:
+# https://docs.openshift.com/container-platform/3.4/install_config/upgrading/automated_upgrades
+RUN yum install -y \
+        wget \
+        git \
+        net-tools \
+        bind-utils \
+        iptables-services \
+        bridge-utils \
+        bash-completion && \
+    yum --enablerepo=rhel-7-server-ose-3.4-rpms \
+        --enablerepo=rhel-7-server-extras-rpms \
+        --enablerepo=rhel-7-server-optional-rpms \
+        -y update && \
+    yum --enablerepo=rhel-7-server-ose-3.4-rpms \
+        --enablerepo=rhel-7-server-extras-rpms \
+        --enablerepo=rhel-7-server-optional-rpms \
+        install -y atomic-openshift-utils \
+                   atomic-openshift-excluder \
+                   atomic-openshift-docker-excluder \
+                   patch \
+                   tmux \
+                   iputils \
+                   telnet \
+                   vim && \
+    yum clean all && \
+    rm -rf /tmp/*
+
+# fetch ansible config.
+VOLUME /etc/ansible
+
+# mount custom-certs directory.
+RUN mkdir /opt/custom-certs
+VOLUME /opt/custom-certs
+
+# mount pre-setup directory.
+RUN mkdir /root/pre-setup
+VOLUME /root/pre-setup
+
+# mount post-setup directory.
+RUN mkdir /root/post-setup
+VOLUME /root/post-setup
+
+# mount setup directory.
+RUN mkdir /root/setup
+VOLUME /root/setup
+
+# copy operator README.
+COPY OPERATOR-README.md /root/README.md
+

@@ -1,0 +1,128 @@
+{
+  "kind": "List",
+  "apiversion": "v1",
+  "metadata": {
+    "name": "hello-service-demo"
+  },
+  "items": [
+    {
+      "kind": "Service",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "service-hello-openshift"
+      },
+      "spec": {
+        "ports": [
+          {
+            "name": "hello-openshift-service-port",
+            "protocol": "TCP",
+            "port": 27017,
+            "targetPort": "http"
+          }
+        ],
+        "selector": {
+          "name": "hello-openshift"
+        },
+        "portalIP": "",
+        "type": "ClusterIP",
+        "sessionAffinity": "None"
+      }
+    },
+    {
+      "kind": "Route",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "route-hello-openshift",
+        "namespace": "hello-openshift"
+      },
+      "spec": {
+        "host": "hello-openshift.apps.int.spodon.com",
+        "to": {
+          "kind": "Service",
+          "name": "service-hello-openshift"
+        },
+        "port": {
+          "targetPort": "hello-openshift-service-port"
+        },
+        "tls": {
+          "termination": "edge",
+          "insecureEdgeTerminationPolicy": "Redirect"
+        }
+      }
+    },
+    {
+      "kind": "DeploymentConfig",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "hello-openshift",
+        "labels": {
+          "name": "hello-openshift"
+        }
+      },
+      "spec": {
+        "strategy": {
+          "type": "Recreate",
+          "resources": {}
+        },
+        "triggers": [
+          {
+            "type": "ConfigChange"
+          }
+        ],
+        "replicas": 2,
+        "selector": {
+          "name": "hello-openshift"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "name": "hello-openshift"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "hello-openshift",
+                "image": "openshift/hello-openshift",
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "10m",
+                    "memory": "16Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination/log",
+                "imagePullPolicy": "IfNotPresent",
+                "capabilities": {},
+                "securityContext": {
+                  "capabilities": {},
+                  "privileged": false
+                },
+                "livenessProbe": {
+                  "tcpSocket": {
+                    "port": 8080
+                  },
+                  "timeoutSeconds": 1,
+                  "initialDelaySeconds": 10
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccount": "",
+            "nodeSelector": {
+              "region": "primary"
+            }
+          }
+        }
+      }
+    }
+  ]
+}
+

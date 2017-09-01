@@ -1,0 +1,40 @@
+# vim: ft=dosini
+[OSEv3:children]
+masters
+nodes
+
+[OSEv3:vars]
+ansible_ssh_user=cloud-user
+ansible_sudo=true
+ansible_become=true
+deployment_type=openshift-enterprise
+os_sdn_network_plugin_name=redhat/openshift-ovs-multitenant
+openshift_master_api_port=443
+openshift_master_console_port=443
+openshift_use_dnsmasq=true
+openshift_master_default_subdomain=intranet.int.spodon.com
+openshift_master_named_certificates=[{"certfile": "/opt/custom-certs/ocp-master-cert.pem", "keyfile": "/opt/custom-certs/ocp-master-key.pem", "names": ["ocp-master.int.spodon.com"], "cafile": "/opt/custom-certs/custom-cacert.pem"}]
+
+openshift_master_identity_providers=[{'name': 'htpasswd_auth', 'login': 'true', 'challenge': 'true', 'kind': 'HTPasswdPasswordIdentityProvider', 'filename': '/etc/origin/master/htpasswd'}]
+openshift_master_htpasswd_users={'ocadmin': '$apr1$Dh1jdGap$/uwCYGkTEx84Lyuf3oekB/', 'ocuser01': '$apr1$Dh1jdGap$/uwCYGkTEx84Lyuf3oekB/'}
+
+openshift_hosted_router_create_certificate=false
+openshift_hosted_routers=[{'name': 'router-public', 'stats_port': '1936', 'ports': ['80:80', '443:443'], 'replicas': '2', 'namespace': 'default', 'serviceaccount': 'router', 'selector': 'role=infra,exposure=internet', 'images': "openshift3/ose-${component}:${version}", 'certificate': {'certfile':'/opt/custom-certs/internet-router-cert.pem', 'keyfile': '/opt/custom-certs/internet-router-key.pem', 'cafile': '/opt/custom-certs/custom-cacert.pem'}, 'edits': [{'key': 'spec.template.spec.containers[0].env', 'value': {'name': 'ROUTE_LABELS', 'value': "route=internet"}, 'action': 'append'}]}, {'name': 'router-private', 'stats_port': '1936', 'ports': ['80:80', '443:443'], 'replicas': '1', 'namespace': 'default', 'serviceaccount': 'router', 'selector': 'role=infra,exposure=intranet', 'images': "openshift3/ose-${component}:${version}", 'certificate': {'certfile':'/opt/custom-certs/intranet-router-cert.pem', 'keyfile': '/opt/custom-certs/intranet-router-key.pem', 'cafile': '/opt/custom-certs/custom-cacert.pem'}, 'edits': [{'key': 'spec.template.spec.containers[0].env', 'value': {'name': 'ROUTE_LABELS', 'value': "route=intranet"}, 'action': 'append'}]}]
+
+# Place our registry at the right place
+openshift_hosted_registry_selector='role=infra'
+openshift_hosted_registry_replicas=1
+
+openshift_clock_enabled=true
+
+openshift_disable_check=disk_availability,docker_storage,memory_availability
+
+[masters]
+ocp-master.int.spodon.com
+
+[nodes]
+ocp-master.int.spodon.com openshift_node_labels="{'role': 'master'}"
+ocp-node-[1:2].int.spodon.com openshift_node_labels="{'role': 'worker'}"
+ocp-infra-[1:2].int.spodon.com openshift_node_labels="{'role': 'infra', 'exposure': 'internet'}"
+ocp-infra-3.int.spodon.com openshift_node_labels="{'role': 'infra', 'exposure': 'intranet'}"
+

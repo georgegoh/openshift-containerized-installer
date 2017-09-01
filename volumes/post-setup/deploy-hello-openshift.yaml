@@ -1,0 +1,45 @@
+- name: deploy hello-openshift
+  hosts: masters[0]
+  vars:
+    openshift_admin_url: https://ocp-master.int.spodon.com:8443
+    openshift_admin_username: ocadmin
+    openshift_admin_password: system123
+    demo_project_name: hello-openshift
+    #demo_route_hostname: hello-openshift.apps.int.spodon.com
+    router_selector: 'type=infra'
+    router_pem: 'router.pem'
+  tasks:
+    - name: oc login
+      local_action: >
+        command oc login {{ openshift_admin_url }} \
+          --username={{ openshift_admin_username }} \
+          --password={{ openshift_admin_password }}
+      connection: local
+
+    - name: can I create project?
+      local_action: command oc policy can-i create project
+      connection: local
+      register: can_i_create_project
+
+    - debug: msg="Can I create project? {{ can_i_create_project.stdout }}"
+
+    - block:
+      - name: check if project exists
+        local_action: command oc get project {{ demo_project_name }}
+        ignore_errors: yes
+        register: project_exists
+
+      - debug: msg="Project exists? {{ project_exists.rc == 0 }}"
+
+      - name: delete demo project
+        local_action: command oc delete project {{ demo_project_name }}
+        when: project_exists.rc == 0
+
+      - name: create demo project
+        local_action: command oc new-project {{ demo_project_name }}
+
+      - name: create DeploymentConfig
+        local_action: command oc create -f demo-hello-openshift.json
+
+      when: can_i_create_project.stdout=='yes'
+
