@@ -1,0 +1,7 @@
+id_rsa
+*.log
+*.tar
+*.crt
+*.key
+*.pem
+
